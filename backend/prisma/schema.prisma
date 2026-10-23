@@ -1,0 +1,142 @@
+// CampusEvents Prisma Schema — v3.0
+// SQLite database provider
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String    @default("USER") // "USER" | "ORGANIZER" | "ADMIN"
+  phone        String?
+  organization String?
+  bio          String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  bookings      Booking[]
+  eventRequests EventRequest[]
+
+  @@map("users")
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  slug        String?   @unique
+  description String?
+  icon        String?   @default("Sparkles")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  events      Event[]
+  eventRequests EventRequest[]
+
+  @@map("categories")
+}
+
+// Event lifecycle: DRAFT → PUBLISHED → CANCELLED / COMPLETED
+// Created from EventRequest or directly by Admin
+model Event {
+  id              String    @id @default(uuid())
+  title           String
+  slug            String?
+  description     String
+  fullDescription String?
+  categoryId      String
+  category        Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  date            String    // YYYY-MM-DD
+  startTime       String
+  endTime         String
+  location        String
+  capacity        Int
+  organizer       String
+  image           String?
+  status          String    @default("PUBLISHED")
+  // Status values: DRAFT | PUBLISHED | CANCELLED | COMPLETED
+  ticketPrice     Float?    @default(0)  // 0 = free
+  requiresApproval Boolean  @default(false)
+
+  // Link back to the event request that created this event (optional)
+  eventRequestId  String?
+  eventRequest    EventRequest? @relation(fields: [eventRequestId], references: [id])
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  bookings        Booking[]
+
+  @@map("events")
+}
+
+// Event Request workflow: PENDING → APPROVED (creates Event) | REJECTED
+model EventRequest {
+  id               String    @id @default(uuid())
+  referenceCode    String    @unique // e.g., EVT-1024
+
+  // Requester info
+  requesterId      String
+  requester        User      @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+
+  // Event details
+  title            String
+  description      String
+  categoryId       String?
+  category         Category? @relation(fields: [categoryId], references: [id])
+  preferredDate    String    // YYYY-MM-DD
+  startTime        String?
+  endTime          String?
+  expectedAttendees Int
+  venue            String
+  requirements     String?
+  budget           String?
+  organizerName    String
+  contactEmail     String
+  contactPhone     String?
+  additionalNotes  String?
+  imageUrl         String?
+
+  // Workflow status
+  status           String    @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
+  adminNote        String?   // Admin's reason for accept/reject
+  reviewedAt       DateTime?
+  reviewedBy       String?
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Created event (if approved)
+  events           Event[]
+
+  @@map("event_requests")
+}
+
+model Booking {
+  id            String    @id @default(uuid())
+  referenceCode String    @unique
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId       String
+  event         Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  ticketType    String?   @default("General Admission")
+  quantity      Int       @default(1)
+  totalAmount   Float     @default(0)
+  notes         String?
+  bookingDate   DateTime  @default(now())
+  status        String    @default("CONFIRMED") // CONFIRMED | PENDING | CANCELLED | CHECKED_IN
+  checkedIn     Boolean   @default(false)
+  checkedInAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, eventId])
+  @@map("bookings")
+}

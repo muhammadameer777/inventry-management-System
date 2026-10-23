@@ -1,0 +1,32 @@
+{
+  "name": "campusevents-workspace",
+  "version": "2.0.0",
+  "description": "CampusEvents — University Event Booking & Management System",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "start:backend": "npm --prefix backend start",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview",
+    "db:push": "npm --prefix backend run prisma:push",
+    "db:seed": "npm --prefix backend run seed"
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "keywords": [
+    "event-management",
+    "university",
+    "booking",
+    "crud",
+    "fullstack",
+    "sqlite",
+    "prisma",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC"
+}
